@@ -14,7 +14,6 @@ const paymentStatus = document.getElementById("paymentStatus");
 const posterSection = document.getElementById("posterSection");
 const posterCanvas = document.getElementById("posterCanvas");
 
-const downloadBtn = document.getElementById("downloadBtn");
 const topDownloadBtn = document.getElementById("topDownloadBtn");
 
 let selectedPhoto = null;
@@ -259,12 +258,10 @@ async function createPoster(name) {
   // Download link
   const imageData = canvas.toDataURL("image/png");
 
-  downloadBtn.href = imageData;
   topDownloadBtn.href = imageData;
 
   // दोनों buttons दिखाओ
   topDownloadBtn.style.display = "flex";
-  downloadBtn.style.display = "flex";
 
   // Poster दिखाओ
   posterSection.style.display = "block";
