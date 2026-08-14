@@ -14,16 +14,19 @@ const topDownloadBtn = document.getElementById("topDownloadBtn");
 
 const posterSection = document.getElementById("posterSection");
 const posterCanvas = document.getElementById("posterCanvas");
+const bottomDownloadBtn = document.getElementById("bottomDownloadBtn");
 
 let selectedPhoto = null;
 let paymentScreenshot = null;
 let posterReady = false;
+let previewReady = false;
 
 
 // नाम
 nameInput.addEventListener("input", () => {
   const name = nameInput.value.trim();
   namePreview.textContent = name || "आपका नाम";
+  if (selectedPhoto) renderPreviewPoster();
 });
 
 
@@ -136,29 +139,66 @@ paymentInput.addEventListener("change", async (event) => {
 });
 
 
-// Download button
-topDownloadBtn.addEventListener("click", (event) => {
+// Download buttons
+function setupDownloadButton(button) {
+  if (!button) return;
 
-  if (!posterReady) {
-    event.preventDefault();
-    return;
-  }
-
-});
-
-
-// Button active
-function activateDownloadButton() {
-
-  topDownloadBtn.classList.remove("download-disabled");
-  topDownloadBtn.classList.add("download-active");
-
-  topDownloadBtn.removeAttribute("aria-disabled");
-
-  topDownloadBtn.href =
-    posterCanvas.toDataURL("image/png");
+  button.addEventListener("click", (event) => {
+    if (!posterReady) {
+      event.preventDefault();
+      return;
+    }
+  });
 }
 
+setupDownloadButton(topDownloadBtn);
+setupDownloadButton(bottomDownloadBtn);
+
+
+// दोनों download buttons को active करें
+function activateDownloadButton() {
+
+  const posterUrl = posterCanvas.toDataURL("image/png");
+
+  [topDownloadBtn, bottomDownloadBtn].forEach(button => {
+
+    if (!button) return;
+
+    button.classList.remove("download-disabled");
+    button.classList.add("download-active");
+
+    button.removeAttribute("aria-disabled");
+
+    button.href = posterUrl;
+  });
+}
+
+
+
+// Live poster preview
+async function renderPreviewPoster() {
+  if (!selectedPhoto) return;
+
+  previewReady = true;
+
+  try {
+    await createPoster(nameInput.value.trim());
+  } catch (error) {
+    console.error("Preview error:", error);
+  }
+
+  // Preview बनाना payment verification नहीं है।
+  // Download buttons payment screenshot आने तक disabled रहेंगे।
+  if (!posterReady) {
+    [topDownloadBtn, bottomDownloadBtn].forEach(button => {
+      if (!button) return;
+      button.classList.add("download-disabled");
+      button.classList.remove("download-active");
+      button.removeAttribute("href");
+      button.setAttribute("aria-disabled", "true");
+    });
+  }
+}
 
 // Poster बनाना
 async function createPoster(name) {
