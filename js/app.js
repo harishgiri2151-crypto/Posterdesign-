@@ -62,8 +62,7 @@ async function removePhotoBackground(file) {
   }
 }
 
-photoInput.addEventListener("change", async (event) => {
-
+photoInput.addEventListener("change", (event) => {
   const file = event.target.files[0];
 
   if (!file || !file.type.startsWith("image/")) {
@@ -72,45 +71,28 @@ photoInput.addEventListener("change", async (event) => {
     return;
   }
 
+  // फोटो तुरंत दिखाएँ — कोई blocking AI processing नहीं।
   selectedPhoto = file;
   processedPhotoBlob = null;
 
-  try {
-    const result = await removePhotoBackground(file);
+  const reader = new FileReader();
 
-    processedPhotoBlob = result;
-    selectedPhoto = result;
-
-    if (processedPhotoUrl) {
-      URL.revokeObjectURL(processedPhotoUrl);
-    }
-
-    processedPhotoUrl = URL.createObjectURL(result);
-
-    preview.src = processedPhotoUrl;
+  reader.onload = (e) => {
+    preview.src = e.target.result;
     preview.style.display = "block";
     placeholder.style.display = "none";
+  };
 
-    await renderPreviewPoster();
+  reader.onerror = () => {
+    console.error("Photo preview पढ़ने में समस्या हुई");
+  };
 
-  } catch (error) {
+  reader.readAsDataURL(file);
 
-    console.error("Photo processing error:", error);
-
-    selectedPhoto = file;
-
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      preview.src = e.target.result;
-      preview.style.display = "block";
-      placeholder.style.display = "none";
-    };
-
-    reader.readAsDataURL(file);
-  }
+  // फोटो आते ही poster preview तैयार करें।
+  // Background removal यहाँ blocking नहीं होगी।
+  renderPreviewPoster();
 });
-
 
 // Payment screenshot
 paymentInput.addEventListener("change", async (event) => {
@@ -259,370 +241,197 @@ async function renderPreviewPoster() {
 
 // Poster बनाना
 async function createPoster(name) {
-
   const canvas = posterCanvas;
   const ctx = canvas.getContext("2d");
 
-  if (!ctx) {
-    throw new Error("Canvas उपलब्ध नहीं है");
-  }
+  if (!ctx) throw new Error("Canvas उपलब्ध नहीं है");
 
-  const width = 1000;
-  const height = 1600;
+  const template = new Image();
+
+  await new Promise((resolve, reject) => {
+    template.onload = resolve;
+    template.onerror = reject;
+    template.src = "assets/poster-template.png";
+  });
+
+  const width = template.naturalWidth || template.width;
+  const height = template.naturalHeight || template.height;
 
   canvas.width = width;
   canvas.height = height;
 
-  posterSection.style.display = "block";
+  ctx.clearRect(0, 0, width, height);
 
-  // =========================================================
-  // PREMIUM BACKGROUND
-  // =========================================================
+  // ORIGINAL PROFESSIONAL TEMPLATE
+  ctx.drawImage(template, 0, 0, width, height);
 
-  const bg = ctx.createLinearGradient(0, 0, 0, height);
-  bg.addColorStop(0, "#fffaf2");
-  bg.addColorStop(0.48, "#ffffff");
-  bg.addColorStop(1, "#f7fff8");
-
-  ctx.fillStyle = bg;
-  ctx.fillRect(0, 0, width, height);
-
-  // Top saffron band
-  ctx.fillStyle = "#ff7a00";
-  ctx.fillRect(0, 0, width, 105);
-
-  // Thin white separation
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 105, width, 20);
-
-  // Green band
-  ctx.fillStyle = "#138808";
-  ctx.fillRect(0, 125, width, 24);
-
-  // Decorative tricolor waves
-  function wave(y, amplitude, thickness, color, phase) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-
-    for (let x = 0; x <= width; x += 10) {
-      const yy =
-        y +
-        Math.sin((x / width) * Math.PI * 2 + phase) * amplitude;
-
-      ctx.lineTo(x, yy);
-    }
-
-    for (let x = width; x >= 0; x -= 10) {
-      const yy =
-        y +
-        thickness +
-        Math.sin((x / width) * Math.PI * 2 + phase) * amplitude;
-
-      ctx.lineTo(x, yy);
-    }
-
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.95;
-    ctx.fill();
-    ctx.restore();
-  }
-
-  wave(185, 18, 28, "#ff7a00", 0);
-  wave(220, 16, 20, "#ffffff", 0.35);
-  wave(252, 18, 28, "#138808", 0.1);
-
-  // =========================================================
-  // ASHOKA CHAKRA
-  // =========================================================
-
-  const cx = width / 2;
-  const cy = 220;
-  const radius = 68;
-
-  ctx.save();
-
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius + 7, 0, Math.PI * 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.shadowColor = "rgba(0,0,0,.18)";
-  ctx.shadowBlur = 18;
-  ctx.fill();
-
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = "#183f7a";
-  ctx.lineWidth = 8;
-  ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.lineWidth = 4;
-
-  for (let i = 0; i < 24; i++) {
-    const a = (Math.PI * 2 * i) / 24;
-
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(
-      cx + Math.cos(a) * radius,
-      cy + Math.sin(a) * radius
-    );
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = "#183f7a";
-  ctx.beginPath();
-  ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-
-  // =========================================================
-  // RED FORT STYLE SILHOUETTE
-  // =========================================================
-
-  const fortY = 310;
-
-  ctx.save();
-  ctx.globalAlpha = 0.95;
-  ctx.fillStyle = "#b94d27";
-
-  // Main fort
-  ctx.fillRect(205, fortY + 55, 590, 105);
-
-  // Central structure
-  ctx.fillRect(335, fortY + 5, 330, 155);
-
-  // Side towers
-  ctx.fillRect(175, fortY + 20, 65, 140);
-  ctx.fillRect(760, fortY + 20, 65, 140);
-
-  // Domes
-  function dome(x, y, r) {
-    ctx.beginPath();
-    ctx.arc(x, y, r, Math.PI, 0);
-    ctx.fill();
-    ctx.fillRect(x - r, y, r * 2, 20);
-  }
-
-  dome(207, fortY + 20, 32);
-  dome(793, fortY + 20, 32);
-  dome(500, fortY + 4, 50);
-
-  // Central flag
-  ctx.strokeStyle = "#333";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(500, fortY - 80);
-  ctx.lineTo(500, fortY + 15);
-  ctx.stroke();
-
-  ctx.fillStyle = "#ff7a00";
-  ctx.fillRect(500, fortY - 80, 70, 18);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(500, fortY - 62, 70, 18);
-
-  ctx.fillStyle = "#138808";
-  ctx.fillRect(500, fortY - 44, 70, 18);
-
-  ctx.restore();
-
-  // =========================================================
-  // MAIN TITLE
-  // =========================================================
-
-  ctx.textAlign = "center";
-
-  ctx.fillStyle = "#ef6c00";
-  ctx.font =
-    "bold 58px Arial, Noto Sans Devanagari, sans-serif";
-
-  ctx.fillText("15 अगस्त विशेष", width / 2, 535);
-
-  ctx.fillStyle = "#173764";
-  ctx.font =
-    "bold 92px Arial, Noto Sans Devanagari, sans-serif";
-
-  ctx.fillText("स्वतंत्रता", width / 2, 635);
-
-  ctx.fillStyle = "#138808";
-  ctx.fillText("दिवस", width / 2, 725);
-
-  ctx.fillStyle = "#555";
-  ctx.font =
-    "bold 27px Arial, Noto Sans Devanagari, sans-serif";
-
-  ctx.fillText(
-    "आजादी • एकता • गौरव",
-    width / 2,
-    775
-  );
-
-  // =========================================================
-  // PHOTO AREA
-  // =========================================================
-
-  const photoX = 115;
-  const photoY = 815;
-  const photoW = 770;
-  const photoH = 520;
-
-  // Premium photo card
-  ctx.save();
-
-  if (typeof ctx.roundRect === "function") {
-    ctx.beginPath();
-    ctx.roundRect(photoX, photoY, photoW, photoH, 42);
-  } else {
-    ctx.beginPath();
-    ctx.rect(photoX, photoY, photoW, photoH);
-  }
-
-  ctx.fillStyle = "#f4f7f8";
-  ctx.shadowColor = "rgba(0,0,0,.16)";
-  ctx.shadowBlur = 28;
-  ctx.shadowOffsetY = 10;
-  ctx.fill();
-
-  ctx.shadowBlur = 0;
-  ctx.shadowOffsetY = 0;
-
-  // Tricolor border
-  ctx.strokeStyle = "#138808";
-  ctx.lineWidth = 7;
-  ctx.stroke();
-
-  ctx.clip();
-
+  // --------------------------------------------------
+  // USER PHOTO
+  // --------------------------------------------------
   if (selectedPhoto) {
-
     const photo = new Image();
 
     await new Promise((resolve, reject) => {
-
       const reader = new FileReader();
 
       reader.onload = (e) => {
-
         photo.onload = resolve;
         photo.onerror = reject;
         photo.src = e.target.result;
-
       };
 
       reader.onerror = reject;
-      reader.readAsDataURL(selectedPhoto);
+      reader.readAsDataURL(processedPhotoBlob || selectedPhoto);
     });
 
-    // Existing CONTAIN fitting preserved.
-    // No crop logic is changed here.
-    const scale = Math.min(
-      photoW / photo.width,
-      photoH / photo.height
+    const cx = width * 0.50;
+    const cy = height * 0.315;
+
+    // थोड़ा slimmer circular portrait
+    const radius = Math.min(
+      width * 0.270,
+      height * 0.202
     );
+
+    // Photo को circle में cleanly cover करें
+    ctx.save();
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.clip();
+
+    const scale = Math.max(
+      (radius * 2) / photo.width,
+      (radius * 2) / photo.height
+    ) * 1.04;
 
     const drawW = photo.width * scale;
     const drawH = photo.height * scale;
 
+    // photo को थोड़ा ऊपर रखें
+    const photoOffsetY = height * 0.018;
+
     ctx.drawImage(
       photo,
-      photoX + (photoW - drawW) / 2,
-      photoY + (photoH - drawH) / 2,
+      cx - drawW / 2,
+      cy - drawH / 2 + photoOffsetY,
       drawW,
       drawH
     );
 
-  } else {
+    ctx.restore();
 
-    // Empty photo area before user uploads a photo
-    ctx.fillStyle = "#f7f9fb";
-    ctx.fillRect(photoX, photoY, photoW, photoH);
+    // --------------------------------------------------
+    // TRICOLOR PHOTO BORDER
+    // --------------------------------------------------
+    ctx.save();
 
-    ctx.strokeStyle = "#d7dde5";
-    ctx.lineWidth = 4;
-    ctx.setLineDash([14, 12]);
+    ctx.lineWidth = Math.max(7, width * 0.006);
 
     ctx.beginPath();
-    ctx.rect(
-      photoX + 28,
-      photoY + 28,
-      photoW - 56,
-      photoH - 56
-    );
+    ctx.arc(cx, cy, radius + ctx.lineWidth * 0.55, 0, Math.PI * 2);
+    ctx.strokeStyle = "#ff7a00";
     ctx.stroke();
 
-    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + ctx.lineWidth * 1.45, 0, Math.PI * 2);
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
 
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius + ctx.lineWidth * 2.35, 0, Math.PI * 2);
+    ctx.strokeStyle = "#138808";
+    ctx.stroke();
+
+    ctx.restore();
   }
 
-  ctx.restore();
-
-  // =========================================================
+  // --------------------------------------------------
   // USER NAME
-  // =========================================================
-
+  // --------------------------------------------------
   const cleanName = (name || "").trim();
 
   if (cleanName) {
 
-    ctx.fillStyle = "#173764";
+    /*
+     * पूरे पुराने nameplate क्षेत्र को ढकें।
+     * इससे template का पुराना नाम और उसकी
+     * golden strip दिखाई नहीं देगी।
+     */
+    const nameBox = {
+      x: width * 0.195,
+      y: height * 0.6645,
+      w: width * 0.610,
+      h: height * 0.0825
+    };
 
-    ctx.font =
-      "bold 62px Arial, Noto Sans Devanagari, sans-serif";
+    ctx.save();
+
+    // पूरी पुरानी template nameplate को opaque cover करें।
+    // Gold border और पुराने नाम को बिल्कुल नीचे से झलकने न दें।
+    const coverRadius = height * 0.020;
+
+    ctx.beginPath();
+
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(
+        nameBox.x,
+        nameBox.y,
+        nameBox.w,
+        nameBox.h,
+        coverRadius
+      );
+    } else {
+      ctx.rect(
+        nameBox.x,
+        nameBox.y,
+        nameBox.w,
+        nameBox.h
+      );
+    }
+
+    ctx.fillStyle = "#082d68";
+    ctx.fill();
+
+    ctx.restore();
+
+    // --------------------------------------------------
+    // NAME — AUTO FIT
+    // --------------------------------------------------
+    ctx.save();
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+
+    const centerX = nameBox.x + nameBox.w / 2;
+    const centerY = nameBox.y + nameBox.h / 2;
+
+    let fontSize = Math.round(height * 0.050);
+    const maxTextWidth = nameBox.w * 0.90;
+
+    while (fontSize > 22) {
+      ctx.font =
+        `900 ${fontSize}px Arial, Noto Sans Devanagari, sans-serif`;
+
+      if (ctx.measureText(cleanName).width <= maxTextWidth) {
+        break;
+      }
+
+      fontSize -= 2;
+    }
 
     ctx.fillText(
       cleanName,
-      width / 2,
-      1435
+      centerX,
+      centerY,
+      maxTextWidth
     );
 
+    ctx.restore();
   }
 
-  // Greeting
-  ctx.fillStyle = "#ef6c00";
-
-  ctx.font =
-    "bold 30px Arial, Noto Sans Devanagari, sans-serif";
-
-  ctx.fillText(
-    "स्वतंत्रता दिवस की हार्दिक शुभकामनाएँ",
-    width / 2,
-    1490
-  );
-
-  // Premium bottom tricolor strip
-  ctx.fillStyle = "#ff7a00";
-  ctx.fillRect(0, 1550, width / 3, 50);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(width / 3, 1550, width / 3, 50);
-
-  ctx.fillStyle = "#138808";
-  ctx.fillRect((width / 3) * 2, 1550, width / 3, 50);
-
-  // Small chakra mark
-  ctx.strokeStyle = "#173764";
-  ctx.lineWidth = 3;
-
-  ctx.beginPath();
-  ctx.arc(width / 2, 1575, 13, 0, Math.PI * 2);
-  ctx.stroke();
-
-  for (let i = 0; i < 12; i++) {
-    const a = (Math.PI * 2 * i) / 12;
-
-    ctx.beginPath();
-    ctx.moveTo(width / 2, 1575);
-    ctx.lineTo(
-      width / 2 + Math.cos(a) * 13,
-      1575 + Math.sin(a) * 13
-    );
-    ctx.stroke();
-  }
-
+  // Poster visible
+  posterSection.style.display = "block";
 }
 
-
-window.addEventListener("DOMContentLoaded", () => { createPoster(""); });
