@@ -9,73 +9,129 @@
 
 <body>
 
-  <main class="page">
+<main class="page">
 
-    <section class="hero">
-      
-      <p class="small-title">🇮🇳 15 अगस्त विशेष 🇮🇳</p>
+  <section class="hero">
+    <p class="small-title">🇮🇳 15 अगस्त विशेष 🇮🇳</p>
 
-      <h1>अपनी फोटो और नाम के साथ<br>आजादी का पोस्टर बनाएं</h1>
+    <h1>अपनी फोटो और नाम के साथ<br>आजादी का पोस्टर बनाएं</h1>
 
-      <p class="subtitle">
-        सिर्फ ₹10 में 10 शानदार पोस्टर
+    <p class="subtitle">सिर्फ ₹10 में शानदार पोस्टर</p>
+  </section>
+
+  <section class="card">
+
+    <label for="nameInput">अपना नाम लिखें</label>
+
+    <input
+      id="nameInput"
+      type="text"
+      maxlength="40"
+      placeholder="यहाँ अपना नाम लिखें"
+    >
+
+    <label>अपना फोटो चुनें</label>
+
+    <label for="photoInput" class="upload-box">
+
+      <div id="placeholder">
+        <div class="camera">📷</div>
+        <strong>फोटो अपलोड करें</strong>
+        <span>यहाँ टैप करके अपनी फोटो चुनें</span>
+      </div>
+
+      <img id="preview" alt="आपकी फोटो">
+
+    </label>
+
+    <input
+      id="photoInput"
+      type="file"
+      accept="image/*"
+      hidden
+    >
+
+    <div class="preview-info">
+      <span>नाम:</span>
+      <strong id="namePreview">आपका नाम</strong>
+    </div>
+
+    <div class="payment-section">
+
+      <h2>₹10 का भुगतान करें</h2>
+
+      <p class="payment-text">
+        QR कोड स्कैन करके किसी भी UPI ऐप से ₹10 भुगतान करें
       </p>
-    </section>
 
-
-    <section class="card">
-
-      <label for="nameInput">अपना नाम लिखें</label>
-
-      <input
-        id="nameInput"
-        type="text"
-        maxlength="40"
-        placeholder="यहाँ अपना नाम लिखें"
+      <img
+        class="payment-qr"
+        src="assets/payment.png"
+        alt="₹10 Payment QR"
       >
 
+      <a
+        class="pay-btn"
+        href="upi://pay?pa=ravindrasocialactivity@okaxis&pn=Ravindra%20Social%20Activity&am=10&cu=INR"
+      >
+        💳 UPI ऐप से भुगतान करें
+      </a>
 
-      <label>अपना फोटो चुनें</label>
+    </div>
 
-      <label for="photoInput" class="upload-box">
+    <div class="screenshot-section">
 
-        <div id="placeholder">
-          <div class="camera">📷</div>
-          <strong>फोटो अपलोड करें</strong>
-          <span>यहाँ टैप करके अपनी फोटो चुनें</span>
+      <h2>भुगतान के बाद स्क्रीनशॉट शेयर करें</h2>
+
+      <p class="payment-text">
+        Payment successful होने का screenshot यहाँ upload करें
+      </p>
+
+      <label for="paymentInput" class="screenshot-box">
+
+        <div id="paymentPlaceholder">
+          <div class="camera">🧾</div>
+          <strong>Payment Screenshot अपलोड करें</strong>
+          <span>यहाँ टैप करके screenshot चुनें</span>
         </div>
 
-        <img id="preview" alt="आपकी फोटो">
+        <img id="paymentPreview" alt="Payment Screenshot">
 
       </label>
 
       <input
-        id="photoInput"
+        id="paymentInput"
         type="file"
         accept="image/*"
         hidden
       >
 
+      <p id="paymentStatus" class="payment-status"></p>
 
-      <div class="preview-info">
-        <span>नाम:</span>
-        <strong id="namePreview">आपका नाम</strong>
-      </div>
+    </div>
 
+    <button id="generateBtn" disabled>
+      🎨 Payment चेक करें और Poster देखें
+    </button>
 
-      <button id="continueBtn">
-        ₹10 में 10 पोस्टर बनाएं
-      </button>
+    <section id="posterSection" class="poster-section">
 
-      <p class="note">
-        फोटो और नाम डालने के बाद आगे बढ़ें
-      </p>
+      <h2>आपका पोस्टर तैयार है 🎉</h2>
+
+      <canvas id="posterCanvas"></canvas>
+
+      <a id="downloadBtn" class="download-btn" download="15-august-poster.png">
+        ⬇️ Poster Download करें
+      </a>
 
     </section>
 
-  </main>
+  </section>
 
-  <script src="js/app.js"></script>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>
