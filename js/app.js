@@ -308,7 +308,7 @@ async function createPoster(name) {
     const drawH = photo.height * scale;
 
     // photo को थोड़ा ऊपर रखें
-    const photoOffsetY = height * 0.018;
+    const photoOffsetY = height * 0.010;
 
     ctx.drawImage(
       photo,
