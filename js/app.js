@@ -10,21 +10,26 @@ const paymentPreview = document.getElementById("paymentPreview");
 const paymentPlaceholder = document.getElementById("paymentPlaceholder");
 
 const paymentStatus = document.getElementById("paymentStatus");
+const topDownloadBtn = document.getElementById("topDownloadBtn");
 
 const posterSection = document.getElementById("posterSection");
 const posterCanvas = document.getElementById("posterCanvas");
 
-const topDownloadBtn = document.getElementById("topDownloadBtn");
-
 let selectedPhoto = null;
 let paymentScreenshot = null;
+let posterReady = false;
 
+
+// नाम
 nameInput.addEventListener("input", () => {
   const name = nameInput.value.trim();
   namePreview.textContent = name || "आपका नाम";
 });
 
+
+// फोटो
 photoInput.addEventListener("change", (event) => {
+
   const file = event.target.files[0];
 
   if (!file || !file.type.startsWith("image/")) {
@@ -46,7 +51,10 @@ photoInput.addEventListener("change", (event) => {
   reader.readAsDataURL(file);
 });
 
+
+// Payment screenshot
 paymentInput.addEventListener("change", async (event) => {
+
   const file = event.target.files[0];
 
   if (!file || !file.type.startsWith("image/")) {
@@ -67,49 +75,101 @@ paymentInput.addEventListener("change", async (event) => {
 
   reader.readAsDataURL(file);
 
-  paymentStatus.textContent =
-    "✓ Screenshot अपलोड हो गया। Poster तैयार किया जा रहा है...";
 
-  paymentStatus.className = "payment-status success";
-
-  // Screenshot upload होते ही सीधे poster दिखाओ
+  // जरूरी जानकारी check
   if (!nameInput.value.trim()) {
     paymentStatus.textContent =
       "पहले अपना नाम लिखें।";
-    paymentStatus.className = "payment-status error";
+
+    paymentStatus.className =
+      "payment-status error";
+
     return;
   }
 
   if (!selectedPhoto) {
     paymentStatus.textContent =
       "पहले अपनी फोटो अपलोड करें।";
-    paymentStatus.className = "payment-status error";
+
+    paymentStatus.className =
+      "payment-status error";
+
     return;
   }
 
+
+  paymentStatus.textContent =
+    "✓ Screenshot अपलोड हो गया। Poster तैयार किया जा रहा है...";
+
+  paymentStatus.className =
+    "payment-status success";
+
+
   try {
+
     await createPoster(nameInput.value.trim());
+
+    posterReady = true;
+
+    activateDownloadButton();
 
     paymentStatus.textContent =
       "✓ Poster तैयार है। नीचे से डाउनलोड करें।";
 
-    paymentStatus.className = "payment-status success";
+    paymentStatus.className =
+      "payment-status success";
 
   } catch (error) {
-    console.error(error);
+
+    console.error("Poster error:", error);
 
     paymentStatus.textContent =
       "Poster बनाने में समस्या हुई। कृपया दोबारा कोशिश करें।";
 
-    paymentStatus.className = "payment-status error";
+    paymentStatus.className =
+      "payment-status error";
+
+    posterReady = false;
+
   }
+
 });
 
 
+// Download button
+topDownloadBtn.addEventListener("click", (event) => {
+
+  if (!posterReady) {
+    event.preventDefault();
+    return;
+  }
+
+});
+
+
+// Button active
+function activateDownloadButton() {
+
+  topDownloadBtn.classList.remove("download-disabled");
+  topDownloadBtn.classList.add("download-active");
+
+  topDownloadBtn.removeAttribute("aria-disabled");
+
+  topDownloadBtn.href =
+    posterCanvas.toDataURL("image/png");
+}
+
+
+// Poster बनाना
 async function createPoster(name) {
 
   const canvas = posterCanvas;
   const ctx = canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error("Canvas उपलब्ध नहीं है");
+  }
+
 
   const width = 900;
   const height = 1200;
@@ -117,11 +177,13 @@ async function createPoster(name) {
   canvas.width = width;
   canvas.height = height;
 
+
   // Background
   ctx.fillStyle = "#fffaf3";
   ctx.fillRect(0, 0, width, height);
 
-  // Tricolor header
+
+  // Tricolor
   ctx.fillStyle = "#ff7a00";
   ctx.fillRect(0, 0, width, 90);
 
@@ -131,7 +193,8 @@ async function createPoster(name) {
   ctx.fillStyle = "#138808";
   ctx.fillRect(0, 180, width, 90);
 
-  // Ashoka Chakra - केवल सफेद पट्टी में
+
+  // Ashoka Chakra — केवल सफेद पट्टी में
   ctx.strokeStyle = "#1a3d73";
   ctx.lineWidth = 7;
 
@@ -144,69 +207,104 @@ async function createPoster(name) {
   ctx.stroke();
 
   for (let i = 0; i < 24; i++) {
-    const angle = (Math.PI * 2 * i) / 24;
+
+    const angle =
+      (Math.PI * 2 * i) / 24;
 
     ctx.beginPath();
+
     ctx.moveTo(cx, cy);
+
     ctx.lineTo(
       cx + Math.cos(angle) * radius,
       cy + Math.sin(angle) * radius
     );
+
     ctx.stroke();
   }
+
 
   // Title
   ctx.textAlign = "center";
 
   ctx.fillStyle = "#ef6c00";
-  ctx.font = "bold 42px Arial, Noto Sans Devanagari, sans-serif";
+
+  ctx.font =
+    "bold 42px Arial, Noto Sans Devanagari, sans-serif";
+
   ctx.fillText(
     "🇮🇳 15 अगस्त विशेष 🇮🇳",
     width / 2,
     350
   );
 
+
   ctx.fillStyle = "#172b4d";
-  ctx.font = "bold 52px Arial, Noto Sans Devanagari, sans-serif";
+
+  ctx.font =
+    "bold 52px Arial, Noto Sans Devanagari, sans-serif";
+
   ctx.fillText(
     "आजादी का पोस्टर",
     width / 2,
     430
   );
 
-  // User photo
+
+  // Photo
   const photo = new Image();
 
   await new Promise((resolve, reject) => {
 
     const reader = new FileReader();
 
-    reader.onload = e => {
+    reader.onload = (e) => {
+
       photo.onload = resolve;
       photo.onerror = reject;
+
       photo.src = e.target.result;
     };
 
     reader.onerror = reject;
+
     reader.readAsDataURL(selectedPhoto);
   });
+
 
   const photoX = 100;
   const photoY = 490;
   const photoW = 700;
   const photoH = 470;
 
+
   ctx.save();
 
   ctx.beginPath();
-  ctx.roundRect(
-    photoX,
-    photoY,
-    photoW,
-    photoH,
-    35
-  );
+
+  // roundRect fallback
+  if (typeof ctx.roundRect === "function") {
+
+    ctx.roundRect(
+      photoX,
+      photoY,
+      photoW,
+      photoH,
+      35
+    );
+
+  } else {
+
+    ctx.rect(
+      photoX,
+      photoY,
+      photoW,
+      photoH
+    );
+  }
+
   ctx.clip();
+
 
   const scale = Math.max(
     photoW / photo.width,
@@ -215,6 +313,7 @@ async function createPoster(name) {
 
   const drawW = photo.width * scale;
   const drawH = photo.height * scale;
+
 
   ctx.drawImage(
     photo,
@@ -226,23 +325,32 @@ async function createPoster(name) {
 
   ctx.restore();
 
+
   // Name
   ctx.fillStyle = "#138808";
-  ctx.font = "bold 58px Arial, Noto Sans Devanagari, sans-serif";
+
+  ctx.font =
+    "bold 58px Arial, Noto Sans Devanagari, sans-serif";
+
   ctx.fillText(
     name,
     width / 2,
     1040
   );
 
+
+  // Greeting
   ctx.fillStyle = "#ef6c00";
-  ctx.font = "bold 30px Arial, Noto Sans Devanagari, sans-serif";
+
+  ctx.font =
+    "bold 30px Arial, Noto Sans Devanagari, sans-serif";
 
   ctx.fillText(
     "स्वतंत्रता दिवस की हार्दिक शुभकामनाएँ",
     width / 2,
     1100
   );
+
 
   // Border
   ctx.strokeStyle = "#138808";
@@ -255,18 +363,11 @@ async function createPoster(name) {
     height - 40
   );
 
-  // Download link
-  const imageData = canvas.toDataURL("image/png");
 
-  topDownloadBtn.href = imageData;
-
-  // दोनों buttons दिखाओ
-  topDownloadBtn.style.display = "flex";
-
-  // Poster दिखाओ
   posterSection.style.display = "block";
 
-  // Poster के पास scroll करो
+
+  // Scroll to poster
   posterSection.scrollIntoView({
     behavior: "smooth",
     block: "start"
