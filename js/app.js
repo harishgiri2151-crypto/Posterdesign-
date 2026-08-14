@@ -10,11 +10,12 @@ const paymentPreview = document.getElementById("paymentPreview");
 const paymentPlaceholder = document.getElementById("paymentPlaceholder");
 
 const paymentStatus = document.getElementById("paymentStatus");
-const generateBtn = document.getElementById("generateBtn");
 
 const posterSection = document.getElementById("posterSection");
 const posterCanvas = document.getElementById("posterCanvas");
+
 const downloadBtn = document.getElementById("downloadBtn");
+const topDownloadBtn = document.getElementById("topDownloadBtn");
 
 let selectedPhoto = null;
 let paymentScreenshot = null;
@@ -25,10 +26,11 @@ nameInput.addEventListener("input", () => {
 });
 
 photoInput.addEventListener("change", (event) => {
-
   const file = event.target.files[0];
 
   if (!file || !file.type.startsWith("image/")) {
+    alert("कृपया केवल फोटो चुनें।");
+    photoInput.value = "";
     return;
   }
 
@@ -43,15 +45,14 @@ photoInput.addEventListener("change", (event) => {
   };
 
   reader.readAsDataURL(file);
-
-  updateButton();
 });
 
-paymentInput.addEventListener("change", (event) => {
-
+paymentInput.addEventListener("change", async (event) => {
   const file = event.target.files[0];
 
   if (!file || !file.type.startsWith("image/")) {
+    alert("कृपया payment screenshot चुनें।");
+    paymentInput.value = "";
     return;
   }
 
@@ -68,111 +69,40 @@ paymentInput.addEventListener("change", (event) => {
   reader.readAsDataURL(file);
 
   paymentStatus.textContent =
-    "Screenshot तैयार है। अब Payment चेक करें।";
+    "✓ Screenshot अपलोड हो गया। Poster तैयार किया जा रहा है...";
 
-  paymentStatus.className = "payment-status";
+  paymentStatus.className = "payment-status success";
 
-  updateButton();
-});
-
-function updateButton() {
-
-  const ready =
-    nameInput.value.trim() &&
-    selectedPhoto &&
-    paymentScreenshot;
-
-  generateBtn.disabled = !ready;
-}
-
-
-generateBtn.addEventListener("click", async () => {
-
-  const name = nameInput.value.trim();
-
-  if (!name) {
-    alert("पहले अपना नाम लिखें।");
-    nameInput.focus();
+  // Screenshot upload होते ही सीधे poster दिखाओ
+  if (!nameInput.value.trim()) {
+    paymentStatus.textContent =
+      "पहले अपना नाम लिखें।";
+    paymentStatus.className = "payment-status error";
     return;
   }
 
   if (!selectedPhoto) {
-    alert("पहले अपनी फोटो अपलोड करें।");
+    paymentStatus.textContent =
+      "पहले अपनी फोटो अपलोड करें।";
+    paymentStatus.className = "payment-status error";
     return;
   }
-
-  if (!paymentScreenshot) {
-    alert("पहले payment screenshot अपलोड करें।");
-    return;
-  }
-
-  generateBtn.disabled = true;
-  generateBtn.textContent = "⏳ Payment screenshot चेक हो रहा है...";
-
-  paymentStatus.textContent =
-    "Screenshot की basic जाँच हो रही है...";
 
   try {
-
-    const result = await Tesseract.recognize(
-      paymentScreenshot,
-      "eng",
-      {
-        logger: info => {
-          if (info.status === "recognizing text") {
-            const percent = Math.round((info.progress || 0) * 100);
-            paymentStatus.textContent =
-              `Screenshot पढ़ा जा रहा है... ${percent}%`;
-          }
-        }
-      }
-    );
-
-    const text = result.data.text.toLowerCase();
-
-    const hasRavindra =
-      text.includes("ravindra") ||
-      text.includes("ravindrasocialactivity");
-
-    const hasAmount =
-      text.includes("10") ||
-      text.includes("10.00") ||
-      text.includes("₹10");
-
-    if (!hasRavindra || !hasAmount) {
-
-      paymentStatus.textContent =
-        "Screenshot में payment की जरूरी जानकारी नहीं मिली। कृपया साफ payment screenshot upload करें।";
-
-      paymentStatus.className =
-        "payment-status error";
-
-      generateBtn.disabled = false;
-      generateBtn.textContent =
-        "🎨 Payment चेक करें और Poster देखें";
-
-      return;
-    }
+    await createPoster(nameInput.value.trim());
 
     paymentStatus.textContent =
-      "✓ Basic payment proof मिला। Poster तैयार किया जा रहा है...";
+      "✓ Poster तैयार है। नीचे से डाउनलोड करें।";
 
-    paymentStatus.className =
-      "payment-status success";
-
-    await createPoster(name);
+    paymentStatus.className = "payment-status success";
 
   } catch (error) {
-
     console.error(error);
 
-    alert(
-      "Screenshot पढ़ने में समस्या हुई। कृपया साफ screenshot दोबारा upload करें।"
-    );
+    paymentStatus.textContent =
+      "Poster बनाने में समस्या हुई। कृपया दोबारा कोशिश करें।";
 
-    generateBtn.disabled = false;
-    generateBtn.textContent =
-      "🎨 Payment चेक करें और Poster देखें";
+    paymentStatus.className = "payment-status error";
   }
 });
 
@@ -202,7 +132,7 @@ async function createPoster(name) {
   ctx.fillStyle = "#138808";
   ctx.fillRect(0, 180, width, 90);
 
-  // Ashoka Chakra only inside white stripe
+  // Ashoka Chakra - केवल सफेद पट्टी में
   ctx.strokeStyle = "#1a3d73";
   ctx.lineWidth = 7;
 
@@ -228,13 +158,22 @@ async function createPoster(name) {
 
   // Title
   ctx.textAlign = "center";
+
   ctx.fillStyle = "#ef6c00";
   ctx.font = "bold 42px Arial, Noto Sans Devanagari, sans-serif";
-  ctx.fillText("🇮🇳 15 अगस्त विशेष 🇮🇳", width / 2, 350);
+  ctx.fillText(
+    "🇮🇳 15 अगस्त विशेष 🇮🇳",
+    width / 2,
+    350
+  );
 
   ctx.fillStyle = "#172b4d";
   ctx.font = "bold 52px Arial, Noto Sans Devanagari, sans-serif";
-  ctx.fillText("आजादी का पोस्टर", width / 2, 430);
+  ctx.fillText(
+    "आजादी का पोस्टर",
+    width / 2,
+    430
+  );
 
   // User photo
   const photo = new Image();
@@ -261,7 +200,13 @@ async function createPoster(name) {
   ctx.save();
 
   ctx.beginPath();
-  ctx.roundRect(photoX, photoY, photoW, photoH, 35);
+  ctx.roundRect(
+    photoX,
+    photoY,
+    photoW,
+    photoH,
+    35
+  );
   ctx.clip();
 
   const scale = Math.max(
@@ -285,10 +230,15 @@ async function createPoster(name) {
   // Name
   ctx.fillStyle = "#138808";
   ctx.font = "bold 58px Arial, Noto Sans Devanagari, sans-serif";
-  ctx.fillText(name, width / 2, 1040);
+  ctx.fillText(
+    name,
+    width / 2,
+    1040
+  );
 
   ctx.fillStyle = "#ef6c00";
   ctx.font = "bold 30px Arial, Noto Sans Devanagari, sans-serif";
+
   ctx.fillText(
     "स्वतंत्रता दिवस की हार्दिक शुभकामनाएँ",
     width / 2,
@@ -298,16 +248,30 @@ async function createPoster(name) {
   // Border
   ctx.strokeStyle = "#138808";
   ctx.lineWidth = 10;
-  ctx.strokeRect(20, 20, width - 40, height - 40);
 
+  ctx.strokeRect(
+    20,
+    20,
+    width - 40,
+    height - 40
+  );
+
+  // Download link
+  const imageData = canvas.toDataURL("image/png");
+
+  downloadBtn.href = imageData;
+  topDownloadBtn.href = imageData;
+
+  // दोनों buttons दिखाओ
+  topDownloadBtn.style.display = "flex";
+  downloadBtn.style.display = "flex";
+
+  // Poster दिखाओ
   posterSection.style.display = "block";
 
-  downloadBtn.href = canvas.toDataURL("image/png");
-
+  // Poster के पास scroll करो
   posterSection.scrollIntoView({
     behavior: "smooth",
     block: "start"
   });
-
-  generateBtn.textContent = "✓ Poster तैयार है";
 }

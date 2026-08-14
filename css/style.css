@@ -371,3 +371,41 @@ h1 {
   background: linear-gradient(90deg, #ff7a00, #138808);
   margin-bottom: 10px;
 }
+
+.download-btn {
+  width: 100%;
+  min-height: 58px;
+  margin-top: 18px;
+  padding: 16px 20px;
+  border-radius: 15px;
+  background: linear-gradient(90deg, #ff7a00, #138808);
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: 900;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-shadow: 0 7px 18px rgba(0,0,0,.14);
+}
+
+.download-btn:active {
+  transform: scale(.98);
+}
+
+.poster-section {
+  margin-top: 25px;
+}
+
+.poster-section h2 {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+#posterCanvas {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  box-shadow: 0 8px 25px rgba(0,0,0,.14);
+}
