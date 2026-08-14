@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>15 अगस्त स्पेशल पोस्टर</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <main class="page">
+
+    <section class="hero">
+      <div class="chakra">☸</div>
+
+      <p class="small-title">🇮🇳 15 अगस्त विशेष 🇮🇳</p>
+
+      <h1>अपनी फोटो और नाम के साथ<br>आजादी का पोस्टर बनाएं</h1>
+
+      <p class="subtitle">
+        सिर्फ ₹10 में 10 शानदार पोस्टर
+      </p>
+    </section>
+
+
+    <section class="card">
+
+      <label for="nameInput">अपना नाम लिखें</label>
+
+      <input
+        id="nameInput"
+        type="text"
+        maxlength="40"
+        placeholder="यहाँ अपना नाम लिखें"
+      >
+
+
+      <label>अपना फोटो चुनें</label>
+
+      <label for="photoInput" class="upload-box">
+
+        <div id="placeholder">
+          <div class="camera">📷</div>
+          <strong>फोटो अपलोड करें</strong>
+          <span>यहाँ टैप करके अपनी फोटो चुनें</span>
+        </div>
+
+        <img id="preview" alt="आपकी फोटो">
+
+      </label>
+
+      <input
+        id="photoInput"
+        type="file"
+        accept="image/*"
+        hidden
+      >
+
+
+      <div class="preview-info">
+        <span>नाम:</span>
+        <strong id="namePreview">आपका नाम</strong>
+      </div>
+
+
+      <button id="continueBtn">
+        ₹10 में 10 पोस्टर बनाएं
+      </button>
+
+      <p class="note">
+        फोटो और नाम डालने के बाद आगे बढ़ें
+      </p>
+
+    </section>
+
+  </main>
+
+  <script src="js/app.js"></script>
+
+</body>
+</html>
