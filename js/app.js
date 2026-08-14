@@ -210,144 +210,142 @@ async function createPoster(name) {
     throw new Error("Canvas उपलब्ध नहीं है");
   }
 
-
   const width = 900;
   const height = 1200;
 
   canvas.width = width;
   canvas.height = height;
 
+  // =========================================================
+  // PROFESSIONAL INDEPENDENCE DAY POSTER
+  // =========================================================
 
-  // Background
-  ctx.fillStyle = "#fffaf3";
+  // Base background
+  const bg = ctx.createLinearGradient(0, 0, 0, height);
+  bg.addColorStop(0, "#fffaf3");
+  bg.addColorStop(0.55, "#ffffff");
+  bg.addColorStop(1, "#f4fff3");
+
+  ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
+  // Outer border
+  ctx.strokeStyle = "#138808";
+  ctx.lineWidth = 8;
+  ctx.strokeRect(18, 18, width - 36, height - 36);
 
-  // Tricolor
+  // ---------------------------------------------------------
+  // Tricolor top banner
+  // ---------------------------------------------------------
+
   ctx.fillStyle = "#ff7a00";
-  ctx.fillRect(0, 0, width, 90);
+  ctx.fillRect(35, 35, width - 70, 72);
 
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 90, width, 90);
+  ctx.fillRect(35, 107, width - 70, 72);
 
   ctx.fillStyle = "#138808";
-  ctx.fillRect(0, 180, width, 90);
+  ctx.fillRect(35, 179, width - 70, 72);
 
-
-  // Ashoka Chakra — केवल सफेद पट्टी में
+  // Ashoka Chakra — strictly inside white stripe
   ctx.strokeStyle = "#1a3d73";
-  ctx.lineWidth = 7;
+  ctx.lineWidth = 5;
 
   const cx = width / 2;
-  const cy = 135;
-  const radius = 30;
+  const cy = 143;
+  const radius = 25;
 
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
 
   for (let i = 0; i < 24; i++) {
-
-    const angle =
-      (Math.PI * 2 * i) / 24;
+    const angle = (Math.PI * 2 * i) / 24;
 
     ctx.beginPath();
-
     ctx.moveTo(cx, cy);
-
     ctx.lineTo(
       cx + Math.cos(angle) * radius,
       cy + Math.sin(angle) * radius
     );
-
     ctx.stroke();
   }
 
+  // ---------------------------------------------------------
+  // Headline
+  // ---------------------------------------------------------
 
-  // Title
   ctx.textAlign = "center";
 
   ctx.fillStyle = "#ef6c00";
-
-  ctx.font =
-    "bold 42px Arial, Noto Sans Devanagari, sans-serif";
-
-  ctx.fillText(
-    "🇮🇳 15 अगस्त विशेष 🇮🇳",
-    width / 2,
-    350
-  );
-
+  ctx.font = "900 34px Arial, Noto Sans Devanagari, sans-serif";
+  ctx.fillText("15 अगस्त विशेष", width / 2, 305);
 
   ctx.fillStyle = "#172b4d";
+  ctx.font = "900 48px Arial, Noto Sans Devanagari, sans-serif";
+  ctx.fillText("आजादी का गौरव", width / 2, 365);
 
-  ctx.font =
-    "bold 52px Arial, Noto Sans Devanagari, sans-serif";
+  // Decorative line
+  ctx.strokeStyle = "#ff7a00";
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(250, 390);
+  ctx.lineTo(650, 390);
+  ctx.stroke();
 
-  ctx.fillText(
-    "आजादी का पोस्टर",
-    width / 2,
-    430
-  );
+  // ---------------------------------------------------------
+  // Photo area
+  // ---------------------------------------------------------
 
-
-  // Photo
   const photo = new Image();
 
   await new Promise((resolve, reject) => {
-
     const reader = new FileReader();
 
     reader.onload = (e) => {
-
       photo.onload = resolve;
       photo.onerror = reject;
-
       photo.src = e.target.result;
     };
 
     reader.onerror = reject;
-
     reader.readAsDataURL(selectedPhoto);
   });
 
+  const photoX = 90;
+  const photoY = 420;
+  const photoW = 720;
+  const photoH = 545;
 
-  const photoX = 100;
-  const photoY = 490;
-  const photoW = 700;
-  const photoH = 470;
-
-
+  // Soft photo card
   ctx.save();
 
-  ctx.beginPath();
-
-  // roundRect fallback
   if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(photoX, photoY, photoW, photoH, 38);
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,.16)";
+    ctx.shadowBlur = 22;
+    ctx.shadowOffsetY = 8;
+    ctx.fill();
+  }
 
-    ctx.roundRect(
-      photoX,
-      photoY,
-      photoW,
-      photoH,
-      35
-    );
+  ctx.restore();
 
+  // Photo clipping
+  ctx.save();
+
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(photoX, photoY, photoW, photoH, 38);
   } else {
-
-    ctx.rect(
-      photoX,
-      photoY,
-      photoW,
-      photoH
-    );
+    ctx.beginPath();
+    ctx.rect(photoX, photoY, photoW, photoH);
   }
 
   ctx.clip();
 
-
-  // Fit the complete photo inside the poster frame.
-  // Never crop the user's head, hair, face or body.
+  // Full-image fitting — no forced crop
   const scale = Math.min(
     photoW / photo.width,
     photoH / photo.height
@@ -356,62 +354,80 @@ async function createPoster(name) {
   const drawW = photo.width * scale;
   const drawH = photo.height * scale;
 
+  const drawX = photoX + (photoW - drawW) / 2;
+  const drawY = photoY + (photoH - drawH) / 2;
 
   ctx.drawImage(
     photo,
-    photoX + (photoW - drawW) / 2,
-    photoY + (photoH - drawH) / 2,
+    drawX,
+    drawY,
     drawW,
     drawH
   );
 
   ctx.restore();
 
-
+  // ---------------------------------------------------------
   // Name
+  // ---------------------------------------------------------
+
   ctx.fillStyle = "#138808";
+  ctx.font = "900 58px Arial, Noto Sans Devanagari, sans-serif";
 
-  ctx.font =
-    "bold 58px Arial, Noto Sans Devanagari, sans-serif";
+  // Long names get slightly smaller
+  if (name.length > 20) {
+    ctx.font = "900 45px Arial, Noto Sans Devanagari, sans-serif";
+  } else if (name.length > 14) {
+    ctx.font = "900 51px Arial, Noto Sans Devanagari, sans-serif";
+  }
 
-  ctx.fillText(
-    name,
-    width / 2,
-    1040
-  );
+  ctx.fillText(name || "आपका नाम", width / 2, 1035);
 
+  // ---------------------------------------------------------
+  // Greeting strip
+  // ---------------------------------------------------------
 
-  // Greeting
-  ctx.fillStyle = "#ef6c00";
+  const stripY = 1070;
 
-  ctx.font =
-    "bold 30px Arial, Noto Sans Devanagari, sans-serif";
+  const strip = ctx.createLinearGradient(80, 0, 820, 0);
+  strip.addColorStop(0, "#ff7a00");
+  strip.addColorStop(0.5, "#ffffff");
+  strip.addColorStop(1, "#138808");
+
+  ctx.fillStyle = strip;
+  ctx.globalAlpha = 0.95;
+
+  if (typeof ctx.roundRect === "function") {
+    ctx.beginPath();
+    ctx.roundRect(90, stripY, 720, 58, 18);
+    ctx.fill();
+  } else {
+    ctx.fillRect(90, stripY, 720, 58);
+  }
+
+  ctx.globalAlpha = 1;
+
+  ctx.fillStyle = "#172b4d";
+  ctx.font = "800 27px Arial, Noto Sans Devanagari, sans-serif";
 
   ctx.fillText(
     "स्वतंत्रता दिवस की हार्दिक शुभकामनाएँ",
     width / 2,
-    1100
+    1108
   );
 
+  // Small clean footer — no political/social branding
+  ctx.fillStyle = "#777";
+  ctx.font = "600 17px Arial, Noto Sans Devanagari, sans-serif";
 
-  // Border
+  ctx.fillText(
+    "जय हिन्द • वन्दे मातरम्",
+    width / 2,
+    1155
+  );
+
+  // Final border
   ctx.strokeStyle = "#138808";
-  ctx.lineWidth = 10;
-
-  ctx.strokeRect(
-    20,
-    20,
-    width - 40,
-    height - 40
-  );
-
-
-  posterSection.style.display = "block";
-
-
-  // Scroll to poster
-  posterSection.scrollIntoView({
-    behavior: "smooth",
-    block: "start"
-  });
+  ctx.lineWidth = 5;
+  ctx.strokeRect(28, 28, width - 56, height - 56);
 }
