@@ -346,7 +346,9 @@ async function createPoster(name) {
   ctx.clip();
 
 
-  const scale = Math.max(
+  // Fit the complete photo inside the poster frame.
+  // Never crop the user's head, hair, face or body.
+  const scale = Math.min(
     photoW / photo.width,
     photoH / photo.height
   );
