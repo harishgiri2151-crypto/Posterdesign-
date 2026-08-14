@@ -149,8 +149,8 @@ paymentInput.addEventListener("change", async (event) => {
 
   try {
 
-    await createPoster(nameInput.value.trim());
-
+    // Preview पहले से canvas पर तैयार है।
+    // Payment screenshot के बाद poster को दोबारा render नहीं करना है।
     posterReady = true;
 
     activateDownloadButton();
@@ -163,16 +163,15 @@ paymentInput.addEventListener("change", async (event) => {
 
   } catch (error) {
 
-    console.error("Poster error:", error);
+    console.error("Download activation error:", error);
 
     paymentStatus.textContent =
-      "Poster बनाने में समस्या हुई। कृपया दोबारा कोशिश करें।";
+      "Download तैयार करने में समस्या हुई। कृपया दोबारा कोशिश करें।";
 
     paymentStatus.className =
       "payment-status error";
 
     posterReady = false;
-
   }
 
 });
