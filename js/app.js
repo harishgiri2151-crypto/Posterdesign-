@@ -31,7 +31,38 @@ nameInput.addEventListener("input", () => {
 
 
 // फोटो
-photoInput.addEventListener("change", (event) => {
+let processedPhotoBlob = null;
+let processedPhotoUrl = null;
+
+async function removePhotoBackground(file) {
+  try {
+    const mod = await import(
+      "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.6.0/+esm"
+    );
+
+    const removeBackground =
+      mod.removeBackground || mod.default;
+
+    if (!removeBackground) {
+      throw new Error("Background removal module नहीं मिला");
+    }
+
+    const blob = await removeBackground(file, {
+      model: "isnet_quint8",
+      output: {
+        format: "image/png",
+        type: "foreground"
+      }
+    });
+
+    return blob;
+  } catch (error) {
+    console.warn("AI background removal failed, original photo used:", error);
+    return file;
+  }
+}
+
+photoInput.addEventListener("change", async (event) => {
 
   const file = event.target.files[0];
 
@@ -42,16 +73,42 @@ photoInput.addEventListener("change", (event) => {
   }
 
   selectedPhoto = file;
+  processedPhotoBlob = null;
 
-  const reader = new FileReader();
+  try {
+    const result = await removePhotoBackground(file);
 
-  reader.onload = (e) => {
-    preview.src = e.target.result;
+    processedPhotoBlob = result;
+    selectedPhoto = result;
+
+    if (processedPhotoUrl) {
+      URL.revokeObjectURL(processedPhotoUrl);
+    }
+
+    processedPhotoUrl = URL.createObjectURL(result);
+
+    preview.src = processedPhotoUrl;
     preview.style.display = "block";
     placeholder.style.display = "none";
-  };
 
-  reader.readAsDataURL(file);
+    await renderPreviewPoster();
+
+  } catch (error) {
+
+    console.error("Photo processing error:", error);
+
+    selectedPhoto = file;
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+      placeholder.style.display = "none";
+    };
+
+    reader.readAsDataURL(file);
+  }
 });
 
 
@@ -210,224 +267,362 @@ async function createPoster(name) {
     throw new Error("Canvas उपलब्ध नहीं है");
   }
 
-  const width = 900;
-  const height = 1200;
+  const width = 1000;
+  const height = 1600;
 
   canvas.width = width;
   canvas.height = height;
 
+  posterSection.style.display = "block";
+
   // =========================================================
-  // PROFESSIONAL INDEPENDENCE DAY POSTER
+  // PREMIUM BACKGROUND
   // =========================================================
 
-  // Base background
   const bg = ctx.createLinearGradient(0, 0, 0, height);
-  bg.addColorStop(0, "#fffaf3");
-  bg.addColorStop(0.55, "#ffffff");
-  bg.addColorStop(1, "#f4fff3");
+  bg.addColorStop(0, "#fffaf2");
+  bg.addColorStop(0.48, "#ffffff");
+  bg.addColorStop(1, "#f7fff8");
 
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, width, height);
 
-  // Outer border
-  ctx.strokeStyle = "#138808";
-  ctx.lineWidth = 8;
-  ctx.strokeRect(18, 18, width - 36, height - 36);
-
-  // ---------------------------------------------------------
-  // Tricolor top banner
-  // ---------------------------------------------------------
-
+  // Top saffron band
   ctx.fillStyle = "#ff7a00";
-  ctx.fillRect(35, 35, width - 70, 72);
+  ctx.fillRect(0, 0, width, 105);
 
+  // Thin white separation
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(35, 107, width - 70, 72);
+  ctx.fillRect(0, 105, width, 20);
 
+  // Green band
   ctx.fillStyle = "#138808";
-  ctx.fillRect(35, 179, width - 70, 72);
+  ctx.fillRect(0, 125, width, 24);
 
-  // Ashoka Chakra — strictly inside white stripe
-  ctx.strokeStyle = "#1a3d73";
-  ctx.lineWidth = 5;
+  // Decorative tricolor waves
+  function wave(y, amplitude, thickness, color, phase) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+
+    for (let x = 0; x <= width; x += 10) {
+      const yy =
+        y +
+        Math.sin((x / width) * Math.PI * 2 + phase) * amplitude;
+
+      ctx.lineTo(x, yy);
+    }
+
+    for (let x = width; x >= 0; x -= 10) {
+      const yy =
+        y +
+        thickness +
+        Math.sin((x / width) * Math.PI * 2 + phase) * amplitude;
+
+      ctx.lineTo(x, yy);
+    }
+
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.95;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  wave(185, 18, 28, "#ff7a00", 0);
+  wave(220, 16, 20, "#ffffff", 0.35);
+  wave(252, 18, 28, "#138808", 0.1);
+
+  // =========================================================
+  // ASHOKA CHAKRA
+  // =========================================================
 
   const cx = width / 2;
-  const cy = 143;
-  const radius = 25;
+  const cy = 220;
+  const radius = 68;
 
+  ctx.save();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + 7, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,.18)";
+  ctx.shadowBlur = 18;
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#183f7a";
+  ctx.lineWidth = 8;
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.stroke();
 
+  ctx.lineWidth = 4;
+
   for (let i = 0; i < 24; i++) {
-    const angle = (Math.PI * 2 * i) / 24;
+    const a = (Math.PI * 2 * i) / 24;
 
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(
-      cx + Math.cos(angle) * radius,
-      cy + Math.sin(angle) * radius
+      cx + Math.cos(a) * radius,
+      cy + Math.sin(a) * radius
     );
     ctx.stroke();
   }
 
-  // ---------------------------------------------------------
-  // Headline
-  // ---------------------------------------------------------
+  ctx.fillStyle = "#183f7a";
+  ctx.beginPath();
+  ctx.arc(cx, cy, 9, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  // =========================================================
+  // RED FORT STYLE SILHOUETTE
+  // =========================================================
+
+  const fortY = 310;
+
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = "#b94d27";
+
+  // Main fort
+  ctx.fillRect(205, fortY + 55, 590, 105);
+
+  // Central structure
+  ctx.fillRect(335, fortY + 5, 330, 155);
+
+  // Side towers
+  ctx.fillRect(175, fortY + 20, 65, 140);
+  ctx.fillRect(760, fortY + 20, 65, 140);
+
+  // Domes
+  function dome(x, y, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, Math.PI, 0);
+    ctx.fill();
+    ctx.fillRect(x - r, y, r * 2, 20);
+  }
+
+  dome(207, fortY + 20, 32);
+  dome(793, fortY + 20, 32);
+  dome(500, fortY + 4, 50);
+
+  // Central flag
+  ctx.strokeStyle = "#333";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(500, fortY - 80);
+  ctx.lineTo(500, fortY + 15);
+  ctx.stroke();
+
+  ctx.fillStyle = "#ff7a00";
+  ctx.fillRect(500, fortY - 80, 70, 18);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(500, fortY - 62, 70, 18);
+
+  ctx.fillStyle = "#138808";
+  ctx.fillRect(500, fortY - 44, 70, 18);
+
+  ctx.restore();
+
+  // =========================================================
+  // MAIN TITLE
+  // =========================================================
 
   ctx.textAlign = "center";
 
   ctx.fillStyle = "#ef6c00";
-  ctx.font = "900 34px Arial, Noto Sans Devanagari, sans-serif";
-  ctx.fillText("15 अगस्त विशेष", width / 2, 305);
+  ctx.font =
+    "bold 58px Arial, Noto Sans Devanagari, sans-serif";
 
-  ctx.fillStyle = "#172b4d";
-  ctx.font = "900 48px Arial, Noto Sans Devanagari, sans-serif";
-  ctx.fillText("आजादी का गौरव", width / 2, 365);
+  ctx.fillText("15 अगस्त विशेष", width / 2, 535);
 
-  // Decorative line
-  ctx.strokeStyle = "#ff7a00";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.moveTo(250, 390);
-  ctx.lineTo(650, 390);
-  ctx.stroke();
+  ctx.fillStyle = "#173764";
+  ctx.font =
+    "bold 92px Arial, Noto Sans Devanagari, sans-serif";
 
-  // ---------------------------------------------------------
-  // Photo area
-  // ---------------------------------------------------------
+  ctx.fillText("स्वतंत्रता", width / 2, 635);
 
-  const photo = new Image();
+  ctx.fillStyle = "#138808";
+  ctx.fillText("दिवस", width / 2, 725);
 
-  await new Promise((resolve, reject) => {
-    const reader = new FileReader();
+  ctx.fillStyle = "#555";
+  ctx.font =
+    "bold 27px Arial, Noto Sans Devanagari, sans-serif";
 
-    reader.onload = (e) => {
-      photo.onload = resolve;
-      photo.onerror = reject;
-      photo.src = e.target.result;
-    };
+  ctx.fillText(
+    "आजादी • एकता • गौरव",
+    width / 2,
+    775
+  );
 
-    reader.onerror = reject;
-    reader.readAsDataURL(selectedPhoto);
-  });
+  // =========================================================
+  // PHOTO AREA
+  // =========================================================
 
-  const photoX = 90;
-  const photoY = 420;
-  const photoW = 720;
-  const photoH = 545;
+  const photoX = 115;
+  const photoY = 815;
+  const photoW = 770;
+  const photoH = 520;
 
-  // Soft photo card
+  // Premium photo card
   ctx.save();
 
   if (typeof ctx.roundRect === "function") {
     ctx.beginPath();
-    ctx.roundRect(photoX, photoY, photoW, photoH, 38);
-    ctx.fillStyle = "#ffffff";
-    ctx.shadowColor = "rgba(0,0,0,.16)";
-    ctx.shadowBlur = 22;
-    ctx.shadowOffsetY = 8;
-    ctx.fill();
-  }
-
-  ctx.restore();
-
-  // Photo clipping
-  ctx.save();
-
-  if (typeof ctx.roundRect === "function") {
-    ctx.beginPath();
-    ctx.roundRect(photoX, photoY, photoW, photoH, 38);
+    ctx.roundRect(photoX, photoY, photoW, photoH, 42);
   } else {
     ctx.beginPath();
     ctx.rect(photoX, photoY, photoW, photoH);
   }
 
+  ctx.fillStyle = "#f4f7f8";
+  ctx.shadowColor = "rgba(0,0,0,.16)";
+  ctx.shadowBlur = 28;
+  ctx.shadowOffsetY = 10;
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Tricolor border
+  ctx.strokeStyle = "#138808";
+  ctx.lineWidth = 7;
+  ctx.stroke();
+
   ctx.clip();
 
-  // Full-image fitting — no forced crop
-  const scale = Math.min(
-    photoW / photo.width,
-    photoH / photo.height
-  );
+  if (selectedPhoto) {
 
-  const drawW = photo.width * scale;
-  const drawH = photo.height * scale;
+    const photo = new Image();
 
-  const drawX = photoX + (photoW - drawW) / 2;
-  const drawY = photoY + (photoH - drawH) / 2;
+    await new Promise((resolve, reject) => {
 
-  ctx.drawImage(
-    photo,
-    drawX,
-    drawY,
-    drawW,
-    drawH
-  );
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+
+        photo.onload = resolve;
+        photo.onerror = reject;
+        photo.src = e.target.result;
+
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(selectedPhoto);
+    });
+
+    // Existing CONTAIN fitting preserved.
+    // No crop logic is changed here.
+    const scale = Math.min(
+      photoW / photo.width,
+      photoH / photo.height
+    );
+
+    const drawW = photo.width * scale;
+    const drawH = photo.height * scale;
+
+    ctx.drawImage(
+      photo,
+      photoX + (photoW - drawW) / 2,
+      photoY + (photoH - drawH) / 2,
+      drawW,
+      drawH
+    );
+
+  } else {
+
+    // Empty photo area before user uploads a photo
+    ctx.fillStyle = "#f7f9fb";
+    ctx.fillRect(photoX, photoY, photoW, photoH);
+
+    ctx.strokeStyle = "#d7dde5";
+    ctx.lineWidth = 4;
+    ctx.setLineDash([14, 12]);
+
+    ctx.beginPath();
+    ctx.rect(
+      photoX + 28,
+      photoY + 28,
+      photoW - 56,
+      photoH - 56
+    );
+    ctx.stroke();
+
+    ctx.setLineDash([]);
+
+  }
 
   ctx.restore();
 
-  // ---------------------------------------------------------
-  // Name
-  // ---------------------------------------------------------
+  // =========================================================
+  // USER NAME
+  // =========================================================
 
-  ctx.fillStyle = "#138808";
-  ctx.font = "900 58px Arial, Noto Sans Devanagari, sans-serif";
+  const cleanName = (name || "").trim();
 
-  // Long names get slightly smaller
-  if (name.length > 20) {
-    ctx.font = "900 45px Arial, Noto Sans Devanagari, sans-serif";
-  } else if (name.length > 14) {
-    ctx.font = "900 51px Arial, Noto Sans Devanagari, sans-serif";
+  if (cleanName) {
+
+    ctx.fillStyle = "#173764";
+
+    ctx.font =
+      "bold 62px Arial, Noto Sans Devanagari, sans-serif";
+
+    ctx.fillText(
+      cleanName,
+      width / 2,
+      1435
+    );
+
   }
 
-  ctx.fillText(name || "आपका नाम", width / 2, 1035);
+  // Greeting
+  ctx.fillStyle = "#ef6c00";
 
-  // ---------------------------------------------------------
-  // Greeting strip
-  // ---------------------------------------------------------
-
-  const stripY = 1070;
-
-  const strip = ctx.createLinearGradient(80, 0, 820, 0);
-  strip.addColorStop(0, "#ff7a00");
-  strip.addColorStop(0.5, "#ffffff");
-  strip.addColorStop(1, "#138808");
-
-  ctx.fillStyle = strip;
-  ctx.globalAlpha = 0.95;
-
-  if (typeof ctx.roundRect === "function") {
-    ctx.beginPath();
-    ctx.roundRect(90, stripY, 720, 58, 18);
-    ctx.fill();
-  } else {
-    ctx.fillRect(90, stripY, 720, 58);
-  }
-
-  ctx.globalAlpha = 1;
-
-  ctx.fillStyle = "#172b4d";
-  ctx.font = "800 27px Arial, Noto Sans Devanagari, sans-serif";
+  ctx.font =
+    "bold 30px Arial, Noto Sans Devanagari, sans-serif";
 
   ctx.fillText(
     "स्वतंत्रता दिवस की हार्दिक शुभकामनाएँ",
     width / 2,
-    1108
+    1490
   );
 
-  // Small clean footer — no political/social branding
-  ctx.fillStyle = "#777";
-  ctx.font = "600 17px Arial, Noto Sans Devanagari, sans-serif";
+  // Premium bottom tricolor strip
+  ctx.fillStyle = "#ff7a00";
+  ctx.fillRect(0, 1550, width / 3, 50);
 
-  ctx.fillText(
-    "जय हिन्द • वन्दे मातरम्",
-    width / 2,
-    1155
-  );
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(width / 3, 1550, width / 3, 50);
 
-  // Final border
-  ctx.strokeStyle = "#138808";
-  ctx.lineWidth = 5;
-  ctx.strokeRect(28, 28, width - 56, height - 56);
+  ctx.fillStyle = "#138808";
+  ctx.fillRect((width / 3) * 2, 1550, width / 3, 50);
+
+  // Small chakra mark
+  ctx.strokeStyle = "#173764";
+  ctx.lineWidth = 3;
+
+  ctx.beginPath();
+  ctx.arc(width / 2, 1575, 13, 0, Math.PI * 2);
+  ctx.stroke();
+
+  for (let i = 0; i < 12; i++) {
+    const a = (Math.PI * 2 * i) / 12;
+
+    ctx.beginPath();
+    ctx.moveTo(width / 2, 1575);
+    ctx.lineTo(
+      width / 2 + Math.cos(a) * 13,
+      1575 + Math.sin(a) * 13
+    );
+    ctx.stroke();
+  }
+
 }
+
+
+window.addEventListener("DOMContentLoaded", () => { createPoster(""); });
